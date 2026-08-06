@@ -62,6 +62,29 @@ export async function setFollowUpDone(raw: unknown): Promise<ActionResult> {
   return { ok: true }
 }
 
+/**
+ * Bulk-clear multiple follow-ups at once. NOT optimistic — spec §6.4 limits
+ * optimistic UI to single-object, reversible mutations, and this touches
+ * many objects. The single-row "Done" button stays optimistic with Undo.
+ */
+export async function setFollowUpsDoneBulk(
+  ids: string[],
+): Promise<ActionResult & { count?: number }> {
+  if (ids.length === 0) return { ok: false, error: 'Nothing selected' }
+
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('interactions')
+    .update({ follow_up_done: true }, { count: 'exact' })
+    .in('id', ids)
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/customers')
+  revalidatePath('/')
+  return { ok: true, count: count ?? ids.length }
+}
+
 export async function deleteInteraction(id: string, customerId: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('interactions').delete().eq('id', id)
