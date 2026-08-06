@@ -1,15 +1,23 @@
 import Link from 'next/link'
+import { format, subDays } from 'date-fns'
 import { DashboardSection } from '@/components/app/dashboard-section'
 import { FollowUpsDue } from '@/components/app/follow-ups-due'
 import { DeliveriesToday } from '@/components/app/deliveries-today'
 import { WeekSummaryCard } from '@/components/app/week-summary-card'
 import { MoneySummaryCards } from '@/components/app/money-summary-cards'
 import { AtRiskCustomers } from '@/components/app/at-risk-customers'
+import { RevenueChart } from '@/components/app/charts/revenue-chart'
+import { ProductMixChart } from '@/components/app/charts/product-mix-chart'
+import { NewCustomersChart } from '@/components/app/charts/new-customers-chart'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Money } from '@/components/app/money'
 import { listFollowUpsDue } from '@/lib/queries/customers'
 import { getWeekSummary, getMoneySummary } from '@/lib/queries/dashboard'
-import { listAtRiskCustomers, getContactsFor } from '@/lib/queries/insights'
+import {
+  listAtRiskCustomers, getContactsFor,
+  getRevenueByMonth, getProductPerformance, getNewCustomersByMonth,
+} from '@/lib/queries/insights'
 
 /**
  * Ordered as the answer to "what do I need to do today?". Each section is
@@ -17,12 +25,19 @@ import { listAtRiskCustomers, getContactsFor } from '@/lib/queries/insights'
  * order IS the design.
  */
 export default async function DashboardPage() {
-  const [followUps, weekSummary, moneySummary, atRisk] = await Promise.all([
-    listFollowUpsDue(),
-    getWeekSummary(),
-    getMoneySummary(),
-    listAtRiskCustomers(),
-  ])
+  const [followUps, weekSummary, moneySummary, atRisk, revenueSeries, productMix, newCustomers] =
+    await Promise.all([
+      listFollowUpsDue(),
+      getWeekSummary(),
+      getMoneySummary(),
+      listAtRiskCustomers(),
+      getRevenueByMonth(12),
+      getProductPerformance(
+        format(subDays(new Date(), 89), 'yyyy-MM-dd'),
+        format(new Date(), 'yyyy-MM-dd'),
+      ),
+      getNewCustomersByMonth(12),
+    ])
   const contactsByCustomer = await getContactsFor(
     atRisk.map((c) => c.customer_id).filter((id): id is string => id !== null),
   )
@@ -76,6 +91,37 @@ export default async function DashboardPage() {
         }
       >
         <AtRiskCustomers customers={atRisk} contactsByCustomer={contactsByCustomer} />
+      </DashboardSection>
+
+      <DashboardSection title="Trends">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Revenue by month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RevenueChart data={revenueSeries} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Product mix, last 90 days</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProductMixChart data={productMix} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>New customers by month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NewCustomersChart data={newCustomers} />
+            </CardContent>
+          </Card>
+        </div>
       </DashboardSection>
     </div>
   )
