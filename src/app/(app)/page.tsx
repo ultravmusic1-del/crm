@@ -4,8 +4,11 @@ import {
   SectionPlaceholder,
 } from '@/components/app/dashboard-section'
 import { FollowUpsDue } from '@/components/app/follow-ups-due'
+import { DeliveriesToday } from '@/components/app/deliveries-today'
+import { WeekSummaryCard } from '@/components/app/week-summary-card'
 import { Button } from '@/components/ui/button'
 import { listFollowUpsDue } from '@/lib/queries/customers'
+import { getWeekSummary } from '@/lib/queries/dashboard'
 
 /**
  * Ordered as the answer to "what do I need to do today?". Each section is
@@ -13,7 +16,10 @@ import { listFollowUpsDue } from '@/lib/queries/customers'
  * order IS the design.
  */
 export default async function DashboardPage() {
-  const followUps = await listFollowUpsDue()
+  const [followUps, weekSummary] = await Promise.all([
+    listFollowUpsDue(),
+    getWeekSummary(),
+  ])
 
   return (
     <div className="space-y-8">
@@ -29,11 +35,14 @@ export default async function DashboardPage() {
           ) : undefined
         }
       >
-        <FollowUpsDue items={followUps} />
+        <div className="space-y-4">
+          <FollowUpsDue items={followUps} />
+          <DeliveriesToday items={weekSummary.deliveriesToday} />
+        </div>
       </DashboardSection>
 
       <DashboardSection title="This week">
-        <SectionPlaceholder phase="Phase 3" />
+        <WeekSummaryCard summary={weekSummary} />
       </DashboardSection>
 
       <DashboardSection title="Money">

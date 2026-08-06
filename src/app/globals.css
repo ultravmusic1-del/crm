@@ -130,3 +130,91 @@
     @apply font-sans;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────
+   Print. She prints the bake list and takes it into the kitchen, and
+   prints invoices via Save as PDF (Phase 5). Both must be legible at
+   arm's length and readable in black and white.
+   ──────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force light rendering regardless of the on-screen theme. Printing a
+     dark-mode page wastes an entire toner cartridge. */
+  :root,
+  :root[data-theme='dark'],
+  .dark {
+    color-scheme: light;
+    --background: #fff;
+    --foreground: #000;
+    --muted: #fff;
+    --muted-foreground: #333;
+    --border: #999;
+    --card: #fff;
+    --card-foreground: #000;
+    --accent: #fff;
+    --primary: #000;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+
+  /* Navigation, controls and anything interactive. */
+  aside,
+  header,
+  nav,
+  [data-slot='toaster'],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Flatten the app chrome so content starts at the top of the sheet. */
+  body > div,
+  main > div {
+    display: block !important;
+  }
+
+  /* Never split a product or a delivery across two pages. */
+  li,
+  tr,
+  section > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+
+  /* URLs after links would be noise on a kitchen worktop. */
+  a[href]::after {
+    content: '' !important;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border-bottom: 1px solid #999;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}
