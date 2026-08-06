@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCustomer, listContacts, listInteractions } from '@/lib/queries/customers'
 import { CustomerHeader } from './customer-header'
 import { OverviewTab } from './overview-tab'
+import { ActivityTab } from './activity-tab'
 
 export default async function CustomerDetailPage({
   params,
@@ -41,9 +42,7 @@ export default async function CustomerDetailPage({
         </TabsContent>
 
         <TabsContent value="activity">
-          <p className="text-sm text-muted-foreground">
-            Interaction logging arrives in the next task.
-          </p>
+          <ActivityTab customerId={customer.id} contacts={contacts} interactions={interactions} />
         </TabsContent>
       </Tabs>
     </div>
