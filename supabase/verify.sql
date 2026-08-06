@@ -192,4 +192,80 @@ begin
   end if;
 end $$;
 
+-- ── Phase 2 ─────────────────────────────────────────────────────────────
+
+-- P2.1: a pack_size of zero would raise division_by_zero in the shopping
+-- list and take down the whole production page.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from public.ingredients where pack_size <= 0;
+  if v_bad > 0 then
+    raise exception 'P2.1 FAIL: % ingredient(s) have a non-positive pack_size', v_bad;
+  end if;
+end $$;
+
+-- P2.2: products must never be soft-deleted by two mechanisms.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'products' and column_name = 'active';
+  if v_bad > 0 then
+    raise exception 'P2.2 FAIL: products.active exists; availability is archived_at is null';
+  end if;
+end $$;
+
+-- P2.3: money columns must never be float. Runs over the WHOLE schema, so
+-- it keeps guarding every later phase as they add monetary columns.
+do $$
+declare v_bad text;
+begin
+  select string_agg(table_name || '.' || column_name, ', ') into v_bad
+  from information_schema.columns
+  where table_schema = 'public'
+    and (column_name ~ 'price|cost|amount|total|charge|discount|revenue|margin')
+    and data_type in ('double precision', 'real');
+  if v_bad is not null then
+    raise exception 'P2.3 FAIL: monetary column(s) are float, not numeric: %', v_bad;
+  end if;
+end $$;
+
+-- P2.4: v_product_costs must equal a direct recomputation from the recipe.
+-- This is the arithmetic the whole margin story rests on.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_product_costs vc
+  where vc.recipe_cost <> coalesce((
+    select round(sum(pi.quantity * (i.pack_cost / i.pack_size)), 3)
+    from public.product_ingredients pi
+    join public.ingredients i on i.id = pi.ingredient_id
+    where pi.product_id = vc.product_id
+  ), 0);
+  if v_bad > 0 then
+    raise exception 'P2.4 FAIL: % product(s) have a recipe_cost that does not match their recipe', v_bad;
+  end if;
+end $$;
+
+-- P2.5: the effective price must always equal override-else-tier, and its
+-- stated source must agree with the number.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_effective_prices
+  where effective_price <> coalesce(
+          custom_price,
+          case when price_tier = 'retail' then retail_price else wholesale_price end)
+     or (custom_price is not null and price_source <> 'custom')
+     or (custom_price is null and price_tier = 'retail'    and price_source <> 'retail')
+     or (custom_price is null and price_tier = 'wholesale' and price_source <> 'wholesale');
+  if v_bad > 0 then
+    raise exception 'P2.5 FAIL: % effective price row(s) disagree with override-else-tier', v_bad;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;
