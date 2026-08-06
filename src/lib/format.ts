@@ -1,4 +1,4 @@
-import { format, isValid, parseISO } from 'date-fns'
+import { isValid, parseISO } from 'date-fns'
 
 /**
  * The only place in this codebase allowed to turn a number into a money
@@ -9,56 +9,205 @@ export type CurrencyFormat = {
   currency_decimals: number
 }
 
+/** The bakery's operating timezone. Used as the default for all instant
+ * (timestamptz) formatting. A later task reads the real value from
+ * `app_settings.timezone` and passes it through explicitly. */
+export const BUSINESS_TIME_ZONE = 'Asia/Bahrain'
+
+/** The single sentinel for "nothing to show" across this module. */
+export const NO_VALUE = '—'
+
+// Postgres emits numeric(p,s) columns as plain decimal strings: optional
+// leading '-', digits, optional '.digits'. Nothing else — no whitespace, no
+// hex, no exponents — is a value this app should ever treat as money.
+const NUMERIC_STRING_RE = /^-?\d+(\.\d+)?$/
+
+// A `date` column value: 'YYYY-MM-DD', a calendar date with no instant
+// attached. Must never go through timezone conversion.
+const PLAIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Money formatters are expensive to construct (measured ~45x slower than
+ * formatting itself). Cache one per decimal count, module-lifetime. */
+const moneyFormatterCache = new Map<number, Intl.NumberFormat>()
+
+function getMoneyFormatter(decimals: number): Intl.NumberFormat {
+  let formatter = moneyFormatterCache.get(decimals)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('en-GB', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+    moneyFormatterCache.set(decimals, formatter)
+  }
+  return formatter
+}
+
+/** `currency_decimals` comes from a database row — `number` is an
+ * assertion, not a guarantee. Clamp to a usable integer in 0..6, falling
+ * back to 3 (BHD's own precision) for anything that isn't a usable
+ * integer, so bad data renders wrong rather than throwing a RangeError
+ * out of a server component. */
+function resolveDecimals(decimals: number): number {
+  if (!Number.isInteger(decimals)) return 3
+  return Math.min(6, Math.max(0, decimals))
+}
+
 export function formatMoney(
   value: number | string | null | undefined,
   fmt: CurrencyFormat,
 ): string {
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === null || value === undefined || value === '') return NO_VALUE
 
-  const n = typeof value === 'string' ? Number(value) : value
-  if (!Number.isFinite(n)) return '—'
+  let n: number
+  if (typeof value === 'string') {
+    if (!NUMERIC_STRING_RE.test(value)) return NO_VALUE
+    n = Number(value)
+  } else {
+    n = value
+  }
+  if (!Number.isFinite(n)) return NO_VALUE
 
-  const body = new Intl.NumberFormat('en-GB', {
-    minimumFractionDigits: fmt.currency_decimals,
-    maximumFractionDigits: fmt.currency_decimals,
-  }).format(Math.abs(n))
+  const decimals = resolveDecimals(fmt.currency_decimals)
+  const body = getMoneyFormatter(decimals).format(Math.abs(n))
 
   return `${n < 0 ? '-' : ''}${fmt.currency_symbol} ${body}`
 }
 
-/** Accepts a `date` or `timestamptz` string from Postgres, or a Date. */
-export function formatDate(value: string | Date | null | undefined): string {
-  if (!value) return '—'
-  const d = typeof value === 'string' ? parseISO(value) : value
-  return isValid(d) ? format(d, 'd MMM yyyy') : '—'
+function calendarDateFromPlainString(value: string): Date {
+  // Represent the calendar date as UTC noon: far enough from midnight
+  // that no timezone or DST shift can push it into an adjacent day when
+  // later read back out.
+  const [y, m, d] = value.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 12))
 }
 
-export function formatDateTime(value: string | Date | null | undefined): string {
-  if (!value) return '—'
-  const d = typeof value === 'string' ? parseISO(value) : value
-  return isValid(d) ? format(d, 'd MMM yyyy, HH:mm') : '—'
+function formatInstantDatePart(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone,
+  }).format(d)
 }
 
-export function formatDateRange(
-  from: string | Date,
-  to: string | Date,
-): string {
-  const a = typeof from === 'string' ? parseISO(from) : from
-  const b = typeof to === 'string' ? parseISO(to) : to
-  if (!isValid(a) || !isValid(b)) return '—'
-  const sameYear = a.getFullYear() === b.getFullYear()
-  const sameMonth = sameYear && a.getMonth() === b.getMonth()
-  if (sameMonth) return `${format(a, 'd')}–${format(b, 'd MMM yyyy')}`
-  if (sameYear) return `${format(a, 'd MMM')} – ${format(b, 'd MMM yyyy')}`
-  return `${format(a, 'd MMM yyyy')} – ${format(b, 'd MMM yyyy')}`
+function formatInstantTimePart(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(d)
 }
 
 /**
- * Store phone numbers as typed, minus decorative whitespace. Spec §6.2:
- * never reject a phone number for its format.
+ * Accepts a `date` or `timestamptz` string from Postgres, or a Date.
+ *
+ * `date` values ('YYYY-MM-DD') are calendar dates with no instant attached
+ * and are rendered as-is, in no timezone. Everything else — an ISO instant
+ * string, or a `Date` — is converted into `timeZone` before rendering,
+ * because the server may run in UTC while the business is in Bahrain.
+ */
+export function formatDate(
+  value: string | Date | null | undefined,
+  timeZone: string = BUSINESS_TIME_ZONE,
+): string {
+  if (!value) return NO_VALUE
+
+  if (typeof value === 'string' && PLAIN_DATE_RE.test(value)) {
+    const d = calendarDateFromPlainString(value)
+    return isValid(d) ? formatInstantDatePart(d, 'UTC') : NO_VALUE
+  }
+
+  const d = typeof value === 'string' ? parseISO(value) : value
+  return isValid(d) ? formatInstantDatePart(d, timeZone) : NO_VALUE
+}
+
+/** Accepts a `timestamptz` string from Postgres, or a Date. Always an
+ * instant — converted into `timeZone` before rendering. */
+export function formatDateTime(
+  value: string | Date | null | undefined,
+  timeZone: string = BUSINESS_TIME_ZONE,
+): string {
+  if (!value) return NO_VALUE
+  const d = typeof value === 'string' ? parseISO(value) : value
+  if (!isValid(d)) return NO_VALUE
+  return `${formatInstantDatePart(d, timeZone)}, ${formatInstantTimePart(d, timeZone)}`
+}
+
+type YMD = { y: number; m: number; d: number } // m is 1-based
+
+function toYMD(value: string | Date, timeZone: string): YMD | null {
+  if (typeof value === 'string' && PLAIN_DATE_RE.test(value)) {
+    const [y, m, d] = value.split('-').map(Number)
+    return { y, m, d }
+  }
+
+  const dateObj = typeof value === 'string' ? parseISO(value) : value
+  if (!isValid(dateObj)) return null
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(dateObj)
+  const y = Number(parts.find((p) => p.type === 'year')?.value)
+  const m = Number(parts.find((p) => p.type === 'month')?.value)
+  const d = Number(parts.find((p) => p.type === 'day')?.value)
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null
+  return { y, m, d }
+}
+
+function renderYMD(ymd: YMD, withYear: boolean): string {
+  const d = new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d, 12))
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: withYear ? 'numeric' : undefined,
+    timeZone: 'UTC',
+  }).format(d)
+}
+
+/**
+ * Renders an inclusive date range, collapsing to a single date when both
+ * ends fall on the same day and rejecting a reversed range outright.
+ * `from`/`to` follow the same calendar-date-vs-instant rule as
+ * `formatDate`.
+ */
+export function formatDateRange(
+  from: string | Date | null | undefined,
+  to: string | Date | null | undefined,
+  timeZone: string = BUSINESS_TIME_ZONE,
+): string {
+  if (!from || !to) return NO_VALUE
+
+  const a = toYMD(from, timeZone)
+  const b = toYMD(to, timeZone)
+  if (!a || !b) return NO_VALUE
+
+  const aTime = Date.UTC(a.y, a.m - 1, a.d)
+  const bTime = Date.UTC(b.y, b.m - 1, b.d)
+  if (aTime > bTime) return NO_VALUE
+  if (aTime === bTime) return renderYMD(a, true)
+
+  const sameYear = a.y === b.y
+  const sameMonth = sameYear && a.m === b.m
+  if (sameMonth) return `${a.d}–${renderYMD(b, true)}`
+  if (sameYear) return `${renderYMD(a, false)} – ${renderYMD(b, true)}`
+  return `${renderYMD(a, true)} – ${renderYMD(b, true)}`
+}
+
+// Ordinary whitespace, plus the invisible characters phones pasted from
+// WhatsApp in a bilingual Arabic/English market routinely carry: zero-width
+// space (U+200B) and the LRM/RLM bidi marks (U+200E/U+200F).
+const INVISIBLE_RE = /[\u200B\u200E\u200F]/g
+
+/**
+ * Store phone numbers as typed, minus decorative whitespace and invisible
+ * characters. Spec §6.2: never reject a phone number for its format.
  */
 export function normalisePhone(value: string | null | undefined): string | null {
   if (!value) return null
-  const trimmed = value.replace(/\s+/g, ' ').trim()
+  const trimmed = value.replace(INVISIBLE_RE, '').replace(/\s+/g, ' ').trim()
   return trimmed.length > 0 ? trimmed : null
 }
