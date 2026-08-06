@@ -71,14 +71,19 @@ describe('formatMoney', () => {
     expect(formatMoney(1.5, corrupt)).toBe('BD 1.500')
   })
 
-  it('clamps an out-of-range currency_decimals instead of throwing', () => {
+  it('falls back to three decimals for an out-of-range currency_decimals rather than clamping it', () => {
+    // -4 and 40 are corrupt data, not badly-expressed preferences — the
+    // same category as NaN. Clamping them would render plausible-looking
+    // money at the wrong precision (e.g. whole units instead of thousandths).
     expect(() =>
       formatMoney(1.5, { currency_symbol: 'BD', currency_decimals: -4 }),
     ).not.toThrow()
-    expect(formatMoney(1.5, { currency_symbol: 'BD', currency_decimals: -4 })).toBe('BD 2')
-    expect(formatMoney(1.5, { currency_symbol: 'BD', currency_decimals: 40 })).toBe(
-      'BD 1.500000',
-    )
+    expect(formatMoney(1.5, { currency_symbol: 'BD', currency_decimals: -4 })).toBe('BD 1.500')
+    expect(formatMoney(1.5, { currency_symbol: 'BD', currency_decimals: 40 })).toBe('BD 1.500')
+  })
+
+  it('keeps a legitimate zero-decimal currency at zero decimals', () => {
+    expect(formatMoney(1.5, { currency_symbol: '¥', currency_decimals: 0 })).toBe('¥ 2')
   })
 
   it('rounds half-away-from-zero at the least significant rendered decimal', () => {
@@ -108,6 +113,15 @@ describe('formatDate', () => {
     expect(formatDate(null)).toBe(NO_VALUE)
     expect(formatDate(undefined)).toBe(NO_VALUE)
   })
+
+  it('rejects an invalid plain date rather than letting Date.UTC roll it over', () => {
+    // Date.UTC normalises overflow (Feb 30 -> Mar 2, month 13 -> next Feb)
+    // and maps years 0-99 into the 1900s. None of that is "the date the
+    // caller typed" and must not render as if it were.
+    expect(formatDate('2026-02-30')).toBe(NO_VALUE)
+    expect(formatDate('2026-13-45')).toBe(NO_VALUE)
+    expect(formatDate('0099-08-06')).toBe(NO_VALUE)
+  })
 })
 
 describe('formatDateTime', () => {
@@ -126,6 +140,14 @@ describe('formatDateTime', () => {
   it('defaults to Asia/Bahrain', () => {
     expect(BUSINESS_TIME_ZONE).toBe('Asia/Bahrain')
   })
+
+  it('rejects a plain date rather than inventing a midnight for it', () => {
+    // A `date` column has no time-of-day. Under a non-Bahrain host TZ this
+    // used to shift the calendar day (parseISO('2026-08-06') gives
+    // host-local midnight); it must now be refused outright, in any TZ.
+    expect(formatDateTime('2026-08-06')).toBe(NO_VALUE)
+    expect(formatDateTime('2026-08-06', 'Pacific/Kiritimati')).toBe(NO_VALUE)
+  })
 })
 
 describe('formatDateRange', () => {
@@ -141,10 +163,20 @@ describe('formatDateRange', () => {
     expect(formatDateRange(null, '2026-08-06')).toBe(NO_VALUE)
     expect(formatDateRange('2026-08-06', undefined)).toBe(NO_VALUE)
   })
+
+  it('rejects an invalid plain date on either end rather than rolling it over', () => {
+    expect(formatDateRange('2026-02-30', '2026-08-06')).toBe(NO_VALUE)
+    expect(formatDateRange('2026-08-06', '2026-13-45')).toBe(NO_VALUE)
+    expect(formatDateRange('0099-08-06', '2026-08-06')).toBe(NO_VALUE)
+  })
 })
 
 describe('normalisePhone', () => {
   it('strips invisible zero-width and bidi marks that WhatsApp pastes leave behind', () => {
     expect(normalisePhone('‎+973 1234​ 5678‏')).toBe('+973 1234 5678')
+  })
+
+  it('strips the Arabic Letter Mark and directional isolate marks', () => {
+    expect(normalisePhone('؜+973⁦ 1234 5678⁩')).toBe('+973 1234 5678')
   })
 })

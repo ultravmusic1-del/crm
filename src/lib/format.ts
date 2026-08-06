@@ -43,13 +43,13 @@ function getMoneyFormatter(decimals: number): Intl.NumberFormat {
 }
 
 /** `currency_decimals` comes from a database row — `number` is an
- * assertion, not a guarantee. Clamp to a usable integer in 0..6, falling
- * back to 3 (BHD's own precision) for anything that isn't a usable
- * integer, so bad data renders wrong rather than throwing a RangeError
- * out of a server component. */
+ * assertion, not a guarantee. A value outside 0..6 (or not an integer at
+ * all) is corrupt data, not a badly-expressed preference — the same
+ * category as NaN — so it falls back to 3 (BHD's own precision) rather
+ * than being clamped into a plausible-looking but wrong precision. */
 function resolveDecimals(decimals: number): number {
-  if (!Number.isInteger(decimals)) return 3
-  return Math.min(6, Math.max(0, decimals))
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 6) return 3
+  return decimals
 }
 
 export function formatMoney(
@@ -73,12 +73,22 @@ export function formatMoney(
   return `${n < 0 ? '-' : ''}${fmt.currency_symbol} ${body}`
 }
 
-function calendarDateFromPlainString(value: string): Date {
+function calendarDateFromPlainString(value: string): Date | null {
   // Represent the calendar date as UTC noon: far enough from midnight
   // that no timezone or DST shift can push it into an adjacent day when
   // later read back out.
   const [y, m, d] = value.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, d, 12))
+  const date = new Date(Date.UTC(y, m - 1, d, 12))
+  // Date.UTC normalises overflow (Feb 30 -> Mar 2) and maps years 0-99
+  // into the 1900s. Reject anything it silently rewrote.
+  if (
+    date.getUTCFullYear() !== y ||
+    date.getUTCMonth() !== m - 1 ||
+    date.getUTCDate() !== d
+  ) {
+    return null
+  }
+  return date
 }
 
 function formatInstantDatePart(d: Date, timeZone: string): string {
@@ -115,20 +125,28 @@ export function formatDate(
 
   if (typeof value === 'string' && PLAIN_DATE_RE.test(value)) {
     const d = calendarDateFromPlainString(value)
-    return isValid(d) ? formatInstantDatePart(d, 'UTC') : NO_VALUE
+    return d ? formatInstantDatePart(d, 'UTC') : NO_VALUE
   }
 
   const d = typeof value === 'string' ? parseISO(value) : value
   return isValid(d) ? formatInstantDatePart(d, timeZone) : NO_VALUE
 }
 
-/** Accepts a `timestamptz` string from Postgres, or a Date. Always an
- * instant — converted into `timeZone` before rendering. */
+/**
+ * Accepts a `timestamptz` string from Postgres, or a Date. Always an
+ * instant — converted into `timeZone` before rendering.
+ *
+ * A plain `date` string ('YYYY-MM-DD') has no time-of-day, so inventing
+ * midnight for it would be a lie regardless of which timezone we pick —
+ * that value belongs to `formatDate`, not here. Reject it rather than
+ * silently rendering the wrong day.
+ */
 export function formatDateTime(
   value: string | Date | null | undefined,
   timeZone: string = BUSINESS_TIME_ZONE,
 ): string {
   if (!value) return NO_VALUE
+  if (typeof value === 'string' && PLAIN_DATE_RE.test(value)) return NO_VALUE
   const d = typeof value === 'string' ? parseISO(value) : value
   if (!isValid(d)) return NO_VALUE
   return `${formatInstantDatePart(d, timeZone)}, ${formatInstantTimePart(d, timeZone)}`
@@ -138,8 +156,9 @@ type YMD = { y: number; m: number; d: number } // m is 1-based
 
 function toYMD(value: string | Date, timeZone: string): YMD | null {
   if (typeof value === 'string' && PLAIN_DATE_RE.test(value)) {
-    const [y, m, d] = value.split('-').map(Number)
-    return { y, m, d }
+    const date = calendarDateFromPlainString(value)
+    if (!date) return null
+    return { y: date.getUTCFullYear(), m: date.getUTCMonth() + 1, d: date.getUTCDate() }
   }
 
   const dateObj = typeof value === 'string' ? parseISO(value) : value
@@ -199,8 +218,9 @@ export function formatDateRange(
 
 // Ordinary whitespace, plus the invisible characters phones pasted from
 // WhatsApp in a bilingual Arabic/English market routinely carry: zero-width
-// space (U+200B) and the LRM/RLM bidi marks (U+200E/U+200F).
-const INVISIBLE_RE = /[\u200B\u200E\u200F]/g
+// space (U+200B), the LRM/RLM bidi marks (U+200E/U+200F), the Arabic
+// Letter Mark (U+061C), and the directional isolate marks (U+2066-U+2069).
+const INVISIBLE_RE = /[\u200B\u200E\u200F\u061C\u2066-\u2069]/g
 
 /**
  * Store phone numbers as typed, minus decorative whitespace and invisible
