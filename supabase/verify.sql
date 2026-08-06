@@ -347,4 +347,75 @@ begin
   end if;
 end $$;
 
+-- ── Phase 4 ─────────────────────────────────────────────────────────────
+
+-- P4.1: the bake list must equal a direct sum of order_items over the same
+-- window and statuses. This is the arithmetic spec §7 Phase 4 asks to be
+-- verified by hand; here it is, verified automatically as well.
+do $$
+declare
+  v_from date := public.f_today() - 90;
+  v_to   date := public.f_today() + 90;
+  v_bake  int;
+  v_direct int;
+begin
+  select coalesce(sum(total_quantity), 0) into v_bake
+  from public.f_bake_list(v_from, v_to);
+
+  select coalesce(sum(oi.quantity), 0) into v_direct
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where o.delivery_date between v_from and v_to
+    and o.status in ('confirmed','in_production','delivered');
+
+  if v_bake <> v_direct then
+    raise exception 'P4.1 FAIL: bake list total % <> direct sum %', v_bake, v_direct;
+  end if;
+end $$;
+
+-- P4.2: draft and cancelled orders must never reach the bake list.
+do $$
+declare
+  v_from date := public.f_today() - 90;
+  v_to   date := public.f_today() + 90;
+  v_excluded int;
+  v_bake int;
+  v_all  int;
+begin
+  select coalesce(sum(oi.quantity), 0) into v_excluded
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where o.delivery_date between v_from and v_to
+    and o.status in ('draft','cancelled');
+
+  if v_excluded = 0 then
+    raise notice 'P4.2 SKIPPED: no draft or cancelled orders in the window';
+    return;
+  end if;
+
+  select coalesce(sum(total_quantity), 0) into v_bake from public.f_bake_list(v_from, v_to);
+
+  select coalesce(sum(oi.quantity), 0) into v_all
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where o.delivery_date between v_from and v_to;
+
+  if v_bake + v_excluded <> v_all then
+    raise exception 'P4.2 FAIL: bake list % + excluded % <> all %', v_bake, v_excluded, v_all;
+  end if;
+end $$;
+
+-- P4.3: packs_to_buy must always cover total_needed. An off-by-one here
+-- means running out of oats mid-bake.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.f_shopping_list(public.f_today() - 90, public.f_today() + 90)
+  where packs_to_buy * pack_size < total_needed;
+  if v_bad > 0 then
+    raise exception 'P4.3 FAIL: % shopping line(s) buy fewer packs than needed', v_bad;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;

@@ -156,6 +156,13 @@ export type Database = {
             foreignKeyName: "contacts_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_effective_prices"
             referencedColumns: ["customer_id"]
           },
@@ -200,6 +207,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "customer_prices_customer_id_fkey"
@@ -403,6 +417,13 @@ export type Database = {
             foreignKeyName: "interactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_effective_prices"
             referencedColumns: ["customer_id"]
           },
@@ -449,6 +470,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "order_items_order_id_fkey"
@@ -544,6 +572,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -792,6 +827,13 @@ export type Database = {
             foreignKeyName: "recurring_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "recurring_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_effective_prices"
             referencedColumns: ["customer_id"]
           },
@@ -832,6 +874,22 @@ export type Database = {
           status: string | null
           type: string | null
           updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_delivery_schedule: {
+        Row: {
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: string | null
+          delivery_date: string | null
+          delivery_notes_snapshot: string | null
+          items: Json | null
+          order_id: string | null
+          order_number: number | null
+          status: string | null
+          total_units: number | null
         }
         Relationships: []
       }
@@ -883,6 +941,13 @@ export type Database = {
             foreignKeyName: "interactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_effective_prices"
             referencedColumns: ["customer_id"]
           },
@@ -920,6 +985,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -971,6 +1043,13 @@ export type Database = {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_effective_prices"
             referencedColumns: ["customer_id"]
           },
@@ -994,12 +1073,34 @@ export type Database = {
       }
     }
     Functions: {
+      f_bake_list: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          contributors: Json
+          product_id: string
+          product_name: string
+          product_unit: string
+          total_quantity: number
+        }[]
+      }
       f_generate_scheduled_orders: {
         Args: { p_until: string }
         Returns: {
           created_count: number
           skipped_count: number
           warnings: string[]
+        }[]
+      }
+      f_shopping_list: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          estimated_cost: number
+          ingredient_id: string
+          ingredient_name: string
+          pack_size: number
+          packs_to_buy: number
+          total_needed: number
+          unit: string
         }[]
       }
       f_today: { Args: never; Returns: string }
