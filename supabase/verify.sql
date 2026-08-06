@@ -624,4 +624,124 @@ begin
   end if;
 end $$;
 
+-- ── Phase 8 ─────────────────────────────────────────────────────────────
+
+-- P8.1: every table in public has RLS enabled. No exceptions.
+do $$
+declare v_bad text;
+begin
+  select string_agg(c.relname, ', ') into v_bad
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;
+  if v_bad is not null then
+    raise exception 'P8.1 FAIL: table(s) without RLS: %', v_bad;
+  end if;
+end $$;
+
+-- P8.2: every table except signup_allowlist has at least one policy.
+-- A table with RLS and no policy is invisible, which is how the Phase 0
+-- login bug happened.
+do $$
+declare v_bad text;
+begin
+  select string_agg(c.relname, ', ') into v_bad
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'r'
+    and not exists (select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = c.relname);
+  if v_bad is not null then
+    raise exception 'P8.2 FAIL: table(s) with RLS but no policy: %', v_bad;
+  end if;
+end $$;
+
+-- P8.3: anon can execute no function in public. Spec correction C3.
+do $$
+declare v_bad text;
+begin
+  select string_agg(p.proname, ', ') into v_bad
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and has_function_privilege('anon', p.oid, 'EXECUTE');
+  if v_bad is not null then
+    raise exception 'P8.3 FAIL: anon can execute function(s): %', v_bad;
+  end if;
+end $$;
+
+-- P8.4: exactly one security definer function, and it is the auth trigger.
+do $$
+declare v_bad text;
+begin
+  select string_agg(p.proname, ', ') into v_bad
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.prosecdef
+    and p.proname <> 'f_handle_new_user';
+  if v_bad is not null then
+    raise exception 'P8.4 FAIL: unexpected security definer function(s): %', v_bad;
+  end if;
+end $$;
+
+-- P8.5: `overdue` is nowhere stored.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from information_schema.columns
+  where table_schema = 'public' and column_name = 'overdue';
+  if v_bad > 0 then
+    raise exception 'P8.5 FAIL: an overdue column exists; it must stay derived';
+  end if;
+end $$;
+
+-- P8.6: current_date appears in no function body. The database is UTC and
+-- the business is UTC+3, so current_date is wrong for three hours a day.
+--
+-- Same materialized-CTE trick as P0.6: a plain join lets Postgres evaluate
+-- pg_get_functiondef() before the namespace predicate restricts the scan,
+-- which hits an aggregate in pg_catalog and dies with 42809.
+do $$
+declare v_bad text;
+begin
+  with public_fns as materialized (
+    select oid, proname
+    from pg_proc
+    where pronamespace = 'public'::regnamespace
+      and prokind = 'f'
+  )
+  select string_agg(proname, ', ') into v_bad
+  from public_fns
+  where pg_get_functiondef(oid) ~* '\mcurrent_date\M';
+
+  if v_bad is not null then
+    raise exception 'P8.6 FAIL: function(s) use current_date instead of f_today(): %', v_bad;
+  end if;
+end $$;
+
+-- P8.7: total revenue is reproducible three different ways.
+do $$
+declare v_orders numeric; v_summary numeric; v_products numeric;
+begin
+  select coalesce(sum(subtotal), 0) into v_orders
+  from public.v_order_totals
+  where status in ('confirmed','in_production','delivered');
+
+  select coalesce(sum(lifetime_revenue), 0) into v_summary
+  from public.v_customer_summary;
+
+  select coalesce(sum(revenue), 0) into v_products
+  from public.f_product_performance(date '2000-01-01', date '2100-01-01');
+
+  if v_orders = 0 then
+    raise exception 'P8.7 FAIL: total revenue is 0 — this assertion needs seeded data to mean anything';
+  end if;
+
+  if v_orders <> v_summary then
+    raise exception 'P8.7 FAIL: order revenue % <> customer summary revenue %', v_orders, v_summary;
+  end if;
+  if v_orders <> v_products then
+    raise exception 'P8.7 FAIL: order revenue % <> product performance revenue %', v_orders, v_products;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;
