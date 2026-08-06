@@ -131,6 +131,15 @@
   }
 }
 
+/* Fallback focus ring for anything that doesn't carry shadcn's own
+   focus-visible:ring-* classes — plain <a> tags, custom <button> chips
+   (date pickers, nav links). Every focusable element must show a visible
+   ring; components with their own ring styling simply layer on top. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 /* ────────────────────────────────────────────────────────────────────
    Print. She prints the bake list and takes it into the kitchen, and
    prints invoices via Save as PDF (Phase 5). Both must be legible at
