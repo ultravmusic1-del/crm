@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select'
 import { StatusBadge } from '@/components/app/status-badge'
 import { CustomerEditSheet } from './customer-edit-sheet'
+import { InteractionSheet } from './interaction-sheet'
 import { setCustomerStatus, archiveCustomer, unarchiveCustomer } from '@/lib/actions/customers'
 import { CUSTOMER_STATUSES, type CustomerStatus } from '@/lib/schemas/customers'
 import type { Customer, Contact } from '@/lib/queries/customers'
@@ -18,8 +19,17 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Status transitions that are worth a nudge to log why — dismissing the
+// prompt must never undo the status change itself, so this only decides
+// what to pre-fill the (already-independent) interaction sheet with.
+const STATUS_PROMPT_SUBJECTS: Partial<Record<CustomerStatus, string>> = {
+  active: 'Became a customer',
+  lost: 'Marked as lost',
+}
+
 export function CustomerHeader({
   customer,
+  contacts,
 }: {
   customer: Customer
   contacts: Contact[]
@@ -27,6 +37,8 @@ export function CustomerHeader({
   const router = useRouter()
   const [status, setStatus] = useState<CustomerStatus>(customer.status as CustomerStatus)
   const [editOpen, setEditOpen] = useState(false)
+  const [interactionOpen, setInteractionOpen] = useState(false)
+  const [interactionPrefill, setInteractionPrefill] = useState<string | undefined>(undefined)
 
   // Reversible single-object mutation: update local state first, then
   // confirm with the server. A failure must be visible and retryable, not
@@ -45,6 +57,13 @@ export function CustomerHeader({
           onClick: () => applyStatus(next),
         },
       })
+      return
+    }
+
+    const prefillSubject = STATUS_PROMPT_SUBJECTS[next]
+    if (prefillSubject) {
+      setInteractionPrefill(prefillSubject)
+      setInteractionOpen(true)
     }
   }
 
@@ -102,8 +121,8 @@ export function CustomerHeader({
           variant="outline"
           className="h-11"
           onClick={() => {
-            // TODO(next task): open InteractionSheet
-            console.log('TODO: open InteractionSheet')
+            setInteractionPrefill(undefined)
+            setInteractionOpen(true)
           }}
         >
           Log interaction
@@ -133,6 +152,13 @@ export function CustomerHeader({
       </div>
 
       <CustomerEditSheet customer={customer} open={editOpen} onOpenChange={setEditOpen} />
+      <InteractionSheet
+        customerId={customer.id}
+        contacts={contacts}
+        open={interactionOpen}
+        onOpenChange={setInteractionOpen}
+        prefillSubject={interactionPrefill}
+      />
     </div>
   )
 }
