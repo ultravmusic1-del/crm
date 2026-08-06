@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { notFound } from 'next/navigation'
 import { getInvoiceDetail } from '@/lib/queries/invoices'
 import { getSettings } from '@/lib/queries/settings'
-import { formatDate, formatMoney } from '@/lib/format'
+import { formatDate, formatMoney, parseMoney } from '@/lib/format'
 
 /**
  * No PDF library — this is a print-styled HTML route, saved as PDF by the
@@ -45,8 +45,8 @@ export default async function InvoicePrintPage({
     { label: 'SWIFT', value: settings.bank_swift ?? '' },
   ].filter((l) => l.value)
 
-  const hasDelivery = Number(totals.delivery_charge ?? 0) !== 0
-  const hasDiscount = Number(totals.discount_amount ?? 0) !== 0
+  const hasDelivery = parseMoney(totals.delivery_charge) !== 0
+  const hasDiscount = parseMoney(totals.discount_amount) !== 0
 
   return (
     <div className="relative space-y-8 text-sm">

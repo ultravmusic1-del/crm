@@ -7,6 +7,7 @@ import { DateDisplay } from '@/components/app/date-display'
 import { InvoiceStatusBadge } from '@/components/app/invoice-status-badge'
 import { PAYMENT_METHOD_LABELS } from '@/lib/schemas/invoices'
 import { getInvoiceDetail } from '@/lib/queries/invoices'
+import { parseMoney } from '@/lib/format'
 import { DeletePaymentButton } from './delete-payment-button'
 import { InvoiceActions } from './invoice-actions'
 
@@ -44,7 +45,7 @@ export default async function InvoiceDetailPage({
           invoiceId={invoice.id}
           invoiceNumber={invoice.invoice_number}
           computedStatus={totals.computed_status ?? 'draft'}
-          balance={Number(totals.balance ?? 0)}
+          balance={parseMoney(totals.balance)}
         />
       </div>
 
@@ -120,13 +121,13 @@ export default async function InvoiceDetailPage({
               <span className="text-muted-foreground">Subtotal</span>
               <Money value={totals.subtotal} />
             </div>
-            {Number(totals.delivery_charge ?? 0) !== 0 ? (
+            {parseMoney(totals.delivery_charge) !== 0 ? (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Delivery charge</span>
                 <Money value={totals.delivery_charge} />
               </div>
             ) : null}
-            {Number(totals.discount_amount ?? 0) !== 0 ? (
+            {parseMoney(totals.discount_amount) !== 0 ? (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Discount</span>
                 <span>-<Money value={totals.discount_amount} /></span>

@@ -16,6 +16,7 @@ import { NoDataYet, NoResults } from '@/components/app/empty-state'
 import { Money } from '@/components/app/money'
 import { DateDisplay } from '@/components/app/date-display'
 import { InvoiceStatusBadge } from '@/components/app/invoice-status-badge'
+import { parseMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { InvoiceListRow } from '@/lib/queries/invoices'
 
@@ -77,7 +78,7 @@ const columns: ColumnDef<InvoiceListRow, unknown>[] = [
     header: ({ column }) => <ColumnHeader column={column} title="Balance" />,
     meta: { align: 'right' },
     cell: ({ row }) => {
-      const balance = Number(row.original.balance ?? 0)
+      const balance = parseMoney(row.original.balance)
       return (
         <span className={cn(balance !== 0 && 'font-semibold')}>
           <Money value={row.original.balance} />
@@ -136,7 +137,7 @@ export function InvoicesTable({ invoices }: { invoices: InvoiceListRow[] }) {
     )
     const overdue = invoices.filter((i) => i.computed_status === 'overdue')
     const sumBalance = (rows: InvoiceListRow[]) =>
-      rows.reduce((sum, r) => sum + Number(r.balance ?? 0), 0)
+      rows.reduce((sum, r) => sum + parseMoney(r.balance), 0)
     return {
       outstandingValue: sumBalance(outstanding),
       outstandingCount: outstanding.length,
