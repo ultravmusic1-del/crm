@@ -6,9 +6,11 @@ import {
 import { FollowUpsDue } from '@/components/app/follow-ups-due'
 import { DeliveriesToday } from '@/components/app/deliveries-today'
 import { WeekSummaryCard } from '@/components/app/week-summary-card'
+import { MoneySummaryCards } from '@/components/app/money-summary-cards'
 import { Button } from '@/components/ui/button'
+import { Money } from '@/components/app/money'
 import { listFollowUpsDue } from '@/lib/queries/customers'
-import { getWeekSummary } from '@/lib/queries/dashboard'
+import { getWeekSummary, getMoneySummary } from '@/lib/queries/dashboard'
 
 /**
  * Ordered as the answer to "what do I need to do today?". Each section is
@@ -16,9 +18,10 @@ import { getWeekSummary } from '@/lib/queries/dashboard'
  * order IS the design.
  */
 export default async function DashboardPage() {
-  const [followUps, weekSummary] = await Promise.all([
+  const [followUps, weekSummary, moneySummary] = await Promise.all([
     listFollowUpsDue(),
     getWeekSummary(),
+    getMoneySummary(),
   ])
 
   return (
@@ -42,11 +45,23 @@ export default async function DashboardPage() {
       </DashboardSection>
 
       <DashboardSection title="This week">
-        <WeekSummaryCard summary={weekSummary} />
+        <div className="space-y-3">
+          <WeekSummaryCard summary={weekSummary} />
+          {moneySummary.unbilledDeliveredCount > 0 ? (
+            <Link
+              href="/invoices/new"
+              className="block rounded-lg border border-dashed p-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              {moneySummary.unbilledDeliveredCount} delivered order
+              {moneySummary.unbilledDeliveredCount === 1 ? '' : 's'} worth{' '}
+              <Money value={moneySummary.unbilledDeliveredValue} /> not yet invoiced
+            </Link>
+          ) : null}
+        </div>
       </DashboardSection>
 
       <DashboardSection title="Money">
-        <SectionPlaceholder phase="Phase 5" />
+        <MoneySummaryCards summary={moneySummary} />
       </DashboardSection>
 
       <DashboardSection title="Needs attention">
