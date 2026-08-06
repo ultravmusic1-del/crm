@@ -524,4 +524,104 @@ begin
   end if;
 end $$;
 
+-- ── Phase 6 ─────────────────────────────────────────────────────────────
+
+-- P6.1: a customer with fewer than three orders must NEVER be at risk.
+-- Without the order_count >= 3 guard, avg_gap_days is null, greatest()
+-- ignores nulls, the threshold collapses to lapse_threshold_days, and
+-- everyone who ordered once two months ago lights up.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from public.v_customer_summary
+  where risk_flag and order_count < 3;
+  if v_bad > 0 then
+    raise exception 'P6.1 FAIL: % customer(s) with under 3 orders are flagged at risk', v_bad;
+  end if;
+end $$;
+
+-- P6.2: archived customers, leads and lost customers are never at risk.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from public.v_customer_summary
+  where risk_flag and (archived_at is not null or status in ('lead','lost'));
+  if v_bad > 0 then
+    raise exception 'P6.2 FAIL: % archived/lead/lost customer(s) are flagged at risk', v_bad;
+  end if;
+end $$;
+
+-- P6.3: lifetime revenue must equal the sum of that customer's counted orders.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_customer_summary s
+  where s.lifetime_revenue <> coalesce((
+    select sum(t.subtotal) from public.v_order_totals t
+    where t.customer_id = s.customer_id
+      and t.status in ('confirmed','in_production','delivered')
+  ), 0);
+  if v_bad > 0 then
+    raise exception 'P6.3 FAIL: % customer summary revenue figure(s) are wrong', v_bad;
+  end if;
+end $$;
+
+-- P6.4: cancelled orders are excluded from revenue everywhere.
+do $$
+declare v_cancelled numeric; v_total numeric; v_summary numeric;
+begin
+  select coalesce(sum(subtotal), 0) into v_cancelled
+  from public.v_order_totals where status = 'cancelled';
+
+  if v_cancelled = 0 then
+    raise notice 'P6.4 SKIPPED: no cancelled orders to test with';
+    return;
+  end if;
+
+  select coalesce(sum(subtotal), 0) into v_total from public.v_order_totals;
+  select coalesce(sum(lifetime_revenue), 0) into v_summary from public.v_customer_summary;
+
+  if v_summary >= v_total then
+    raise exception 'P6.4 FAIL: summary revenue % includes cancelled orders (all orders total %)', v_summary, v_total;
+  end if;
+end $$;
+
+-- P6.5: product performance revenue must equal the order_items sum.
+do $$
+declare v_from date := public.f_today() - 365; v_to date := public.f_today() + 365;
+declare v_perf numeric; v_direct numeric;
+begin
+  select coalesce(sum(revenue), 0) into v_perf
+  from public.f_product_performance(v_from, v_to);
+
+  select coalesce(sum(oi.line_total), 0) into v_direct
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where o.delivery_date between v_from and v_to
+    and o.status in ('confirmed','in_production','delivered');
+
+  if v_perf <> v_direct then
+    raise exception 'P6.5 FAIL: product performance revenue % <> direct sum %', v_perf, v_direct;
+  end if;
+end $$;
+
+-- P6.6: revenue by month must sum to the same total over the same window.
+do $$
+declare v_months numeric; v_direct numeric; v_from date;
+begin
+  select min(month) into v_from from public.f_revenue_by_month(12);
+  select coalesce(sum(revenue), 0) into v_months from public.f_revenue_by_month(12);
+
+  select coalesce(sum(t.subtotal), 0) into v_direct
+  from public.v_order_totals t
+  where t.delivery_date >= v_from
+    and t.delivery_date < (date_trunc('month', public.f_today()::timestamp) + interval '1 month')::date
+    and t.status in ('confirmed','in_production','delivered');
+
+  if v_months <> v_direct then
+    raise exception 'P6.6 FAIL: revenue by month % <> direct sum %', v_months, v_direct;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;

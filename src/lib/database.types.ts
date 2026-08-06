@@ -156,6 +156,13 @@ export type Database = {
             foreignKeyName: "contacts_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -207,6 +214,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "customer_prices_customer_id_fkey"
@@ -417,6 +431,13 @@ export type Database = {
             foreignKeyName: "interactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -618,6 +639,13 @@ export type Database = {
             foreignKeyName: "invoices_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -780,6 +808,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -1087,6 +1122,13 @@ export type Database = {
             foreignKeyName: "recurring_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "recurring_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -1134,6 +1176,26 @@ export type Database = {
           status: string | null
           type: string | null
           updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_customer_summary: {
+        Row: {
+          archived_at: string | null
+          avg_gap_days: number | null
+          city: string | null
+          customer_id: string | null
+          days_since_last_order: number | null
+          first_order_date: string | null
+          last_contacted_at: string | null
+          last_order_date: string | null
+          lifetime_revenue: number | null
+          name: string | null
+          order_count: number | null
+          price_tier: string | null
+          risk_flag: boolean | null
+          status: string | null
+          type: string | null
         }
         Relationships: []
       }
@@ -1201,6 +1263,13 @@ export type Database = {
             foreignKeyName: "interactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -1247,6 +1316,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "invoices_customer_id_fkey"
@@ -1302,6 +1378,13 @@ export type Database = {
             foreignKeyName: "invoices_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -1346,6 +1429,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -1399,6 +1489,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -1467,6 +1564,13 @@ export type Database = {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "v_customer_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "v_delivery_schedule"
             referencedColumns: ["customer_id"]
           },
@@ -1513,6 +1617,43 @@ export type Database = {
           created_count: number
           skipped_count: number
           warnings: string[]
+        }[]
+      }
+      f_new_customers_by_month: {
+        Args: { p_months?: number }
+        Returns: {
+          month: string
+          new_customers: number
+        }[]
+      }
+      f_outreach_effectiveness: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          channel: string
+          conversion_pct: number
+          customers_touched: number
+          customers_who_ordered: number
+          interaction_count: number
+        }[]
+      }
+      f_product_performance: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          cost: number
+          margin: number
+          margin_pct: number
+          product_id: string
+          product_name: string
+          revenue: number
+          units_sold: number
+        }[]
+      }
+      f_revenue_by_month: {
+        Args: { p_months?: number }
+        Returns: {
+          month: string
+          order_count: number
+          revenue: number
         }[]
       }
       f_shopping_list: {
