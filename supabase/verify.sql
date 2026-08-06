@@ -418,4 +418,110 @@ begin
   end if;
 end $$;
 
+-- ── Phase 5 ─────────────────────────────────────────────────────────────
+
+-- P5.1: an invoice's subtotal must equal the sum of its covered orders.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_invoice_totals t
+  where t.stored_status <> 'void'
+    and t.subtotal <> coalesce((
+      select sum(ot.subtotal)
+      from public.invoice_orders io
+      join public.v_order_totals ot on ot.order_id = io.order_id
+      where io.invoice_id = t.invoice_id
+        and ot.status in ('confirmed','in_production','delivered')
+    ), 0);
+  if v_bad > 0 then
+    raise exception 'P5.1 FAIL: % invoice(s) have a subtotal that does not match their orders', v_bad;
+  end if;
+end $$;
+
+-- P5.2: total = subtotal + delivery_charge - discount, never negative.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_invoice_totals
+  where stored_status <> 'void'
+    and total <> greatest(subtotal + delivery_charge - discount_amount, 0);
+  if v_bad > 0 then
+    raise exception 'P5.2 FAIL: % invoice total(s) do not equal subtotal + delivery - discount', v_bad;
+  end if;
+end $$;
+
+-- P5.3: no order may appear on more than one live invoice. The unique
+-- constraint enforces it; this catches a future migration relaxing it.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from (
+    select order_id from public.invoice_orders group by order_id having count(*) > 1
+  ) t;
+  if v_bad > 0 then
+    raise exception 'P5.3 FAIL: % order(s) appear on more than one invoice', v_bad;
+  end if;
+end $$;
+
+-- P5.4: no invoice may cover an order belonging to a different customer.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.invoice_orders io
+  join public.orders   o on o.id = io.order_id
+  join public.invoices i on i.id = io.invoice_id
+  where o.customer_id <> i.customer_id;
+  if v_bad > 0 then
+    raise exception 'P5.4 FAIL: % invoice line(s) cross customers', v_bad;
+  end if;
+end $$;
+
+-- P5.5: a partially paid invoice must NOT read as paid.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_invoice_totals
+  where computed_status = 'paid' and amount_paid < total;
+  if v_bad > 0 then
+    raise exception 'P5.5 FAIL: % partially paid invoice(s) read as paid', v_bad;
+  end if;
+end $$;
+
+-- P5.6: invoice numbers are unique, and next_invoice_number is ahead of
+-- every allocated number. Gaps from voided invoices are expected.
+do $$
+declare v_dupes int; v_next int; v_max int;
+begin
+  select count(*) into v_dupes from (
+    select invoice_number from public.invoices group by invoice_number having count(*) > 1
+  ) t;
+  if v_dupes > 0 then
+    raise exception 'P5.6 FAIL: % duplicate invoice number(s)', v_dupes;
+  end if;
+
+  select next_invoice_number into v_next from public.app_settings where id = 1;
+  select coalesce(max(nullif(regexp_replace(invoice_number, '\D', '', 'g'), '')::int), 0)
+    into v_max from public.invoices;
+
+  if v_max >= v_next then
+    raise exception 'P5.6 FAIL: next_invoice_number (%) is not ahead of the highest allocated (%)', v_next, v_max;
+  end if;
+end $$;
+
+-- P5.7: a voided invoice keeps its number and its frozen total.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.invoices
+  where status = 'void' and (voided_total is null or invoice_number is null);
+  if v_bad > 0 then
+    raise exception 'P5.7 FAIL: % voided invoice(s) lost their number or total', v_bad;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;
