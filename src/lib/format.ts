@@ -73,6 +73,23 @@ export function formatMoney(
   return `${n < 0 ? '-' : ''}${fmt.currency_symbol} ${body}`
 }
 
+/**
+ * supabase-js returns numeric(12,3) columns as strings, to avoid float loss
+ * in transit. This is the only place allowed to turn one into a number —
+ * grep for Number()/parseFloat() on money outside this file.
+ *
+ * Throws rather than returning NaN: a NaN that reaches a total shows up as
+ * "—" three screens away and takes an hour to trace.
+ */
+export function parseMoney(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') return 0
+  const n = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(n)) {
+    throw new Error(`Not a valid monetary value: ${JSON.stringify(value)}`)
+  }
+  return n
+}
+
 function calendarDateFromPlainString(value: string): Date | null {
   // Represent the calendar date as UTC noon: far enough from midnight
   // that no timezone or DST shift can push it into an adjacent day when

@@ -7,6 +7,7 @@ import {
   formatMoney,
   NO_VALUE,
   normalisePhone,
+  parseMoney,
   type CurrencyFormat,
 } from '@/lib/format'
 
@@ -168,6 +169,27 @@ describe('formatDateRange', () => {
     expect(formatDateRange('2026-02-30', '2026-08-06')).toBe(NO_VALUE)
     expect(formatDateRange('2026-08-06', '2026-13-45')).toBe(NO_VALUE)
     expect(formatDateRange('0099-08-06', '2026-08-06')).toBe(NO_VALUE)
+  })
+})
+
+describe('parseMoney', () => {
+  it('parses the strings supabase-js returns for numeric columns', () => {
+    expect(parseMoney('12.250')).toBe(12.25)
+    expect(parseMoney('0.000')).toBe(0)
+  })
+
+  it('passes numbers through', () => {
+    expect(parseMoney(1.5)).toBe(1.5)
+  })
+
+  it('treats null and undefined as zero', () => {
+    expect(parseMoney(null)).toBe(0)
+    expect(parseMoney(undefined)).toBe(0)
+  })
+
+  it('throws on genuinely unparseable input rather than returning NaN', () => {
+    // A NaN silently poisoning a total is far worse than a 500.
+    expect(() => parseMoney('abc')).toThrow()
   })
 })
 
