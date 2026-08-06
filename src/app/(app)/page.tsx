@@ -46,6 +46,10 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Today</h1>
 
+      <Button asChild size="lg" className="h-14 w-full text-base md:hidden">
+        <Link href="/quick-order">Quick order</Link>
+      </Button>
+
       <DashboardSection
         title="Today"
         action={
