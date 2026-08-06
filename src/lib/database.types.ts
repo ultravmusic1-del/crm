@@ -152,6 +152,83 @@ export type Database = {
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+        ]
+      }
+      customer_prices: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          product_id: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          product_id: string
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          product_id?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_costs"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       customers: {
@@ -210,6 +287,36 @@ export type Database = {
           source?: string | null
           status?: string
           type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          pack_cost: number
+          pack_size: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          pack_cost?: number
+          pack_size?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          pack_cost?: number
+          pack_size?: number
+          unit?: string
           updated_at?: string
         }
         Relationships: []
@@ -292,7 +399,112 @@ export type Database = {
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
         ]
+      }
+      product_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          product_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          product_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          product_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ingredients_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_costs"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          retail_price: number
+          sku: string | null
+          unit: string
+          unit_cost: number
+          units_per_box: number
+          updated_at: string
+          wholesale_price: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          retail_price?: number
+          sku?: string | null
+          unit?: string
+          unit_cost?: number
+          units_per_box?: number
+          updated_at?: string
+          wholesale_price?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          retail_price?: number
+          sku?: string | null
+          unit?: string
+          unit_cost?: number
+          units_per_box?: number
+          updated_at?: string
+          wholesale_price?: number
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -353,6 +565,23 @@ export type Database = {
         }
         Relationships: []
       }
+      v_effective_prices: {
+        Row: {
+          custom_price: number | null
+          customer_id: string | null
+          effective_price: number | null
+          price_source: string | null
+          price_tier: string | null
+          product_archived_at: string | null
+          product_id: string | null
+          product_name: string | null
+          product_unit: string | null
+          retail_price: number | null
+          unit_cost: number | null
+          wholesale_price: number | null
+        }
+        Relationships: []
+      }
       v_follow_ups_due: {
         Row: {
           channel: string | null
@@ -380,7 +609,23 @@ export type Database = {
             referencedRelation: "v_customer_list"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
         ]
+      }
+      v_product_costs: {
+        Row: {
+          ingredient_count: number | null
+          product_id: string | null
+          recipe_cost: number | null
+          stated_unit_cost: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
