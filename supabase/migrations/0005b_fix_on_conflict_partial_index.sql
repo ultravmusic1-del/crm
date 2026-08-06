@@ -1,0 +1,27 @@
+-- 0005b_fix_on_conflict_partial_index.sql
+--
+-- This migration exists in the remote's migration history because the
+-- version of f_generate_scheduled_orders first applied as 0005 carried a
+-- bug: it used
+--
+--     on conflict (recurring_order_id, delivery_date) do nothing
+--
+-- while the arbiter index is PARTIAL:
+--
+--     create unique index idx_orders_recurring_delivery
+--       on public.orders (recurring_order_id, delivery_date)
+--       where recurring_order_id is not null;
+--
+-- Postgres will not use a partial index as an ON CONFLICT arbiter unless
+-- the clause repeats the index predicate, so generation raised
+-- `42P10: there is no unique or exclusion constraint matching the ON
+-- CONFLICT specification` on the very first run. The idempotency test
+-- caught it before any UI existed.
+--
+-- The corrected function body has been folded back into
+-- 0005_generate_orders.sql, so replaying these files from scratch produces
+-- the correct end state directly and this file is intentionally a no-op.
+-- It is kept so the file list matches the remote's migration history.
+
+-- (no-op — see 0005_generate_orders.sql for the corrected function)
+select 1;

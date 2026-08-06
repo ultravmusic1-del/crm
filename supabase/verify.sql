@@ -268,4 +268,83 @@ begin
   end if;
 end $$;
 
+-- ── Phase 3 ─────────────────────────────────────────────────────────────
+
+-- P3.1: the SQL fortnightly rule must produce the same dates as
+-- src/lib/recurrence.ts. These expectations are copied from
+-- src/lib/recurrence.test.ts — change one, change both.
+do $$
+declare v_dates date[]; v_start date := date '2026-08-04'; v_from date := date '2026-08-06';
+begin
+  select array_agg(d order by d) into v_dates
+  from generate_series(greatest(v_start, v_from), v_from + 60, interval '1 day') g(d)
+  where extract(dow from g.d)::int = 2
+    and ((g.d::date - v_start) / 7) % 2 = 0;
+
+  if v_dates[1:4] is distinct from array[
+    date '2026-08-18', date '2026-09-01', date '2026-09-15', date '2026-09-29'
+  ] then
+    raise exception 'P3.1 FAIL: SQL fortnightly parity disagrees with recurrence.test.ts. Got %', v_dates[1:4];
+  end if;
+end $$;
+
+-- P3.2: day_of_week 0 must mean Sunday in SQL, matching date-fns getDay().
+do $$
+begin
+  if extract(dow from date '2026-08-09')::int <> 0 then
+    raise exception 'P3.2 FAIL: 2026-08-09 is a Sunday; extract(dow) did not return 0';
+  end if;
+end $$;
+
+-- P3.3: generation must be idempotent.
+do $$
+declare v_before int; v_after int;
+begin
+  select count(*) into v_before from public.orders where recurring_order_id is not null;
+  perform public.f_generate_scheduled_orders(public.f_today() + 21);
+  perform public.f_generate_scheduled_orders(public.f_today() + 21);
+  select count(*) into v_after from public.orders where recurring_order_id is not null;
+  if v_after <> v_before then
+    raise exception 'P3.3 FAIL: generation is not idempotent (% -> %)', v_before, v_after;
+  end if;
+end $$;
+
+-- P3.4: no non-cancelled order may exist with zero line items.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.orders o
+  where o.status <> 'cancelled'
+    and not exists (select 1 from public.order_items oi where oi.order_id = o.id);
+  if v_bad > 0 then
+    raise exception 'P3.4 FAIL: % non-cancelled order(s) have no line items', v_bad;
+  end if;
+end $$;
+
+-- P3.5: no line item may have a zero price. resolvePrices throws on zero;
+-- this catches anything that got in another way.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from public.order_items where unit_price <= 0;
+  if v_bad > 0 then
+    raise exception 'P3.5 FAIL: % order line(s) have a zero unit_price', v_bad;
+  end if;
+end $$;
+
+-- P3.6: v_order_totals must equal a direct sum of its line items.
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad
+  from public.v_order_totals t
+  where t.subtotal <> coalesce((
+    select sum(oi.line_total) from public.order_items oi where oi.order_id = t.order_id
+  ), 0);
+  if v_bad > 0 then
+    raise exception 'P3.6 FAIL: % order(s) have a subtotal that does not match their items', v_bad;
+  end if;
+end $$;
+
 do $$ begin raise notice 'verify.sql: ALL ASSERTIONS PASSED'; end $$;

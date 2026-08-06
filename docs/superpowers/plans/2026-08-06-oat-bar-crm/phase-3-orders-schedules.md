@@ -352,7 +352,17 @@ begin
       )
       -- Idempotency. The unique index alone would RAISE, not skip, so a
       -- second run would abort partway through instead of being a no-op.
-      on conflict (recurring_order_id, delivery_date) do nothing
+      --
+      -- ⚠ CORRECTED DURING THE BUILD. The trailing `where` is REQUIRED.
+      -- idx_orders_recurring_delivery is a PARTIAL unique index, and
+      -- Postgres will not use a partial index as an ON CONFLICT arbiter
+      -- unless the clause repeats its predicate. Without it, the very
+      -- first generation run raises:
+      --   42P10: there is no unique or exclusion constraint matching the
+      --          ON CONFLICT specification
+      on conflict (recurring_order_id, delivery_date)
+        where recurring_order_id is not null
+        do nothing
       returning id into v_order_id;
 
       if v_order_id is null then
