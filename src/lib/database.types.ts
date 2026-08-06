@@ -408,6 +408,159 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total: number | null
+          order_id: string
+          product_id: string
+          product_name: string
+          quantity: number
+          unit_cost: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total?: number | null
+          order_id: string
+          product_id: string
+          product_name: string
+          quantity: number
+          unit_cost?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total?: number | null
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          quantity?: number
+          unit_cost?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_order_list"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_order_totals"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_costs"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          delivery_address: string | null
+          delivery_date: string
+          delivery_notes_snapshot: string | null
+          id: string
+          notes: string | null
+          order_number: number
+          ordered_on: string
+          recurring_order_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          delivery_address?: string | null
+          delivery_date: string
+          delivery_notes_snapshot?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          ordered_on?: string
+          recurring_order_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          delivery_address?: string | null
+          delivery_date?: string
+          delivery_notes_snapshot?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          ordered_on?: string
+          recurring_order_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_recurring_order_id_fkey"
+            columns: ["recurring_order_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_ingredients: {
         Row: {
           created_at: string
@@ -527,6 +680,123 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          recurring_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          recurring_order_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          recurring_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "recurring_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_costs"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "recurring_order_items_recurring_order_id_fkey"
+            columns: ["recurring_order_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_orders: {
+        Row: {
+          active: boolean
+          created_at: string
+          customer_id: string
+          day_of_month: number | null
+          day_of_week: number | null
+          ends_on: string | null
+          frequency: string
+          id: string
+          notes: string | null
+          starts_on: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          customer_id: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          ends_on?: string | null
+          frequency: string
+          id?: string
+          notes?: string | null
+          starts_on: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          customer_id?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          ends_on?: string | null
+          frequency?: string
+          id?: string
+          notes?: string | null
+          starts_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+        ]
+      }
       signup_allowlist: {
         Row: {
           email: string
@@ -618,6 +888,101 @@ export type Database = {
           },
         ]
       }
+      v_order_list: {
+        Row: {
+          customer_id: string | null
+          customer_name: string | null
+          delivery_date: string | null
+          gross_margin: number | null
+          is_recurring: boolean | null
+          line_count: number | null
+          notes: string | null
+          order_id: string | null
+          order_number: number | null
+          ordered_on: string | null
+          recurring_order_id: string | null
+          status: string | null
+          subtotal: number | null
+          total_cost: number | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_recurring_order_id_fkey"
+            columns: ["recurring_order_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_order_totals: {
+        Row: {
+          customer_id: string | null
+          delivery_date: string | null
+          gross_margin: number | null
+          line_count: number | null
+          order_id: string | null
+          order_number: number | null
+          ordered_on: string | null
+          recurring_order_id: string | null
+          status: string | null
+          subtotal: number | null
+          total_cost: number | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_recurring_order_id_fkey"
+            columns: ["recurring_order_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_product_costs: {
         Row: {
           ingredient_count: number | null
@@ -629,6 +994,14 @@ export type Database = {
       }
     }
     Functions: {
+      f_generate_scheduled_orders: {
+        Args: { p_until: string }
+        Returns: {
+          created_count: number
+          skipped_count: number
+          warnings: string[]
+        }[]
+      }
       f_today: { Args: never; Returns: string }
       hook_restrict_signup: { Args: { event: Json }; Returns: Json }
     }
