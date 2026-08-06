@@ -800,11 +800,17 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value, options } of cookiesToSet) {
             supabaseResponse.cookies.set(name, value, options)
           }
-          // @supabase/ssr 0.12 hands back response headers to forward.
-          // Drop this block if Task 0.6 Step 1 found a one-argument setAll.
-          headers?.forEach((value, key) => {
-            supabaseResponse.headers.append(key, value)
-          })
+          // CORRECTED DURING THE BUILD. `headers` is a plain
+          // Record<string, string>, NOT a Headers instance — verified
+          // against @supabase/ssr 0.12.4's own .d.ts. The original
+          // `headers?.forEach((value, key) => ...)` here threw
+          // "headers.forEach is not a function" on every cookie refresh.
+          // Use .set(), not .append(): these are the no-store cache
+          // directives, and without them a CDN or reverse proxy can serve
+          // one user's session token to another user.
+          for (const [key, value] of Object.entries(headers)) {
+            supabaseResponse.headers.set(key, value)
+          }
         },
       },
     },
@@ -843,9 +849,20 @@ export async function updateSession(request: NextRequest) {
 
 `getClaims()` and not `getUser()`: it verifies the JWT signature locally against a cached JWKS endpoint, so this runs on every request with no network round-trip. `getSession()` is never acceptable here — its user object comes from storage unverified.
 
-- [ ] **Step 5: Root proxy**
+- [ ] **Step 5: The proxy entry point**
 
-Create `proxy.ts` at the repository root — **not** `src/`, **not** `middleware.ts`:
+> **CORRECTED DURING THE BUILD.** This step originally said "repository
+> root — not `src/`". That is wrong for this project and it fails
+> **silently**: no error, no warning, `npm run build` simply omits the
+> `ƒ Proxy (Middleware)` line and every route is served unauthenticated.
+> Next's own docs (`node_modules/next/dist/docs/01-app/03-api-reference/
+> 03-file-conventions/proxy.md`) say the file goes in the project root
+> **"or inside `src` if applicable"**, level with `app/`. This project has
+> `src/app/`, so the file is **`src/proxy.ts`**.
+>
+> Always confirm `npm run build` prints `ƒ Proxy (Middleware)`.
+
+Create `src/proxy.ts` — **not** the repo root, **not** `middleware.ts`:
 
 ```ts
 import type { NextRequest } from 'next/server'

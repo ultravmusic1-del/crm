@@ -29,7 +29,11 @@ written without a caret on purpose. Check `package.json` after any install.
 
 ## Framework non-negotiables
 
-- `proxy.ts` (root), NOT `middleware.ts`. Next 16 renamed it.
+- **`src/proxy.ts`**, NOT the repo root and NOT `middleware.ts`. Next 16
+  renamed middleware, and the file must sit beside `app/` — which here is
+  `src/app/`. At the repo root it is **silently ignored**: no error, no
+  warning, and the whole app is unauthenticated. Check `npm run build`
+  prints `ƒ Proxy (Middleware)`; if that line is missing, it is not wired.
 - `await cookies()`, `await params`, `await searchParams` — all async.
 - NEVER write during a Server Component render. Mutations = Server Actions.
 - Supabase auth: `getClaims()` to protect routes. Never `getSession()`.
@@ -104,8 +108,17 @@ written without a caret on purpose. Check `package.json` after any install.
 - `Date.UTC` silently normalises overflow (Feb 30 → Mar 2) and maps years
   0–99 into the 1900s. `lib/format.ts` round-trips the components to reject
   this; keep that check.
+- **`@supabase/ssr` `setAll(cookiesToSet, headers)` — `headers` is a plain
+  `Record<string, string>`, not a `Headers` instance.** `headers.forEach()`
+  throws; use `Object.entries(headers)`. Forward them with `.set()`: they
+  are the `no-store` cache directives, and without them a CDN can serve one
+  user's session token to another user.
 - Writing `\uXXXX` escapes into a file through a tool call can land as the
   literal invisible character rather than the escape text. Verify the bytes.
+- The Security Advisor does **not** flag `security definer` when the
+  function also has `set search_path = ''` — that combination is the
+  recommended pattern. All four functions pin `search_path`; advisor is
+  clean with zero findings. Keep it that way.
 
 ## Testing (approved deviation from spec §1)
 
