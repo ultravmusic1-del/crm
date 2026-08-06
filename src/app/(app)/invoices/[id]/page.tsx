@@ -49,37 +49,44 @@ export default async function InvoiceDetailPage({
         />
       </div>
 
-      {isVoid ? (
-        <div className="rounded-lg border border-dashed bg-muted/50 p-4 text-sm">
-          This invoice was voided. Its orders were released and can be invoiced again. The
-          number and total are kept for the record.
-        </div>
-      ) : null}
-
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          {orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  #{order.order_number} — delivered <DateDisplay value={order.delivery_date} />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {order.order_items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                    {/* order_items.product_name is the SNAPSHOT taken at order time —
-                        an invoice is a historical document and must reprint identically
-                        forever, even after the product is renamed. */}
-                    <span>
-                      {item.quantity} × {item.product_name}
-                    </span>
-                    <Money value={item.line_total} className="tabular-nums" />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Covered orders</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isVoid ? (
+                // f_void_invoice DELETES invoice_orders — that is what releases
+                // the orders for re-invoicing, and it is correct. So `orders`
+                // is always empty here; show a statement instead of nothing.
+                <p className="text-sm text-muted-foreground">
+                  Invoice {invoice.invoice_number} was voided. Its orders were released
+                  and can be invoiced again. The frozen total at the time of voiding
+                  was <Money value={totals.voided_total} className="font-medium text-foreground" />.
+                </p>
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
+                    <p className="text-sm font-medium">
+                      #{order.order_number} — delivered <DateDisplay value={order.delivery_date} />
+                    </p>
+                    {order.order_items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                        {/* order_items.product_name is the SNAPSHOT taken at order time —
+                            an invoice is a historical document and must reprint identically
+                            forever, even after the product is renamed. */}
+                        <span>
+                          {item.quantity} × {item.product_name}
+                        </span>
+                        <Money value={item.line_total} className="tabular-nums" />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
+                ))
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

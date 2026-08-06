@@ -90,38 +90,57 @@ export default async function InvoicePrintPage({
         ))}
       </div>
 
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-gray-400 text-left">
-            <th className="py-2 font-semibold">Description</th>
-            <th className="py-2 text-right font-semibold">Qty</th>
-            <th className="py-2 text-right font-semibold">Unit price</th>
-            <th className="py-2 text-right font-semibold">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <Fragment key={order.id}>
-              <tr>
-                <td colSpan={4} className="pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Order #{order.order_number} — delivered {formatDate(order.delivery_date)}
-                </td>
-              </tr>
-              {order.order_items.map((item) => (
-                <tr key={item.id} className="border-b border-gray-200">
-                  {/* product_name is the order_items SNAPSHOT, never a join to
-                      products — an invoice must reprint identically forever,
-                      even after the product is renamed. */}
-                  <td className="py-1.5">{item.product_name}</td>
-                  <td className="py-1.5 text-right tabular-nums">{item.quantity}</td>
-                  <td className="py-1.5 text-right tabular-nums">{money(item.unit_price)}</td>
-                  <td className="py-1.5 text-right tabular-nums">{money(item.line_total)}</td>
+      {isVoid ? (
+        // f_void_invoice DELETES the invoice_orders rows — that deletion is
+        // what releases the orders for re-invoicing, and it is correct. But
+        // it means `orders` is always empty here, so the normal line-items
+        // table would print as a header over blank rows. Replace it with an
+        // explicit statement instead of pretending nothing happened.
+        <div className="space-y-1 rounded border border-gray-400 p-4">
+          <p className="font-semibold">Invoice {invoice.invoice_number} was voided.</p>
+          <p className="text-gray-700">
+            Its orders were released and can be invoiced again. The total below is
+            frozen at the amount recorded when this invoice was voided.
+          </p>
+          <p>
+            <span className="text-gray-600">Voided total: </span>
+            <span className="font-semibold">{money(totals.voided_total)}</span>
+          </p>
+        </div>
+      ) : (
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-400 text-left">
+              <th className="py-2 font-semibold">Description</th>
+              <th className="py-2 text-right font-semibold">Qty</th>
+              <th className="py-2 text-right font-semibold">Unit price</th>
+              <th className="py-2 text-right font-semibold">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <Fragment key={order.id}>
+                <tr>
+                  <td colSpan={4} className="pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Order #{order.order_number} — delivered {formatDate(order.delivery_date)}
+                  </td>
                 </tr>
-              ))}
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
+                {order.order_items.map((item) => (
+                  <tr key={item.id} className="border-b border-gray-200">
+                    {/* product_name is the order_items SNAPSHOT, never a join to
+                        products — an invoice must reprint identically forever,
+                        even after the product is renamed. */}
+                    <td className="py-1.5">{item.product_name}</td>
+                    <td className="py-1.5 text-right tabular-nums">{item.quantity}</td>
+                    <td className="py-1.5 text-right tabular-nums">{money(item.unit_price)}</td>
+                    <td className="py-1.5 text-right tabular-nums">{money(item.line_total)}</td>
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <div className="flex justify-end">
         <div className="w-64 space-y-1 text-right tabular-nums">
