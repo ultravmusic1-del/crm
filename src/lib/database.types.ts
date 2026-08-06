@@ -100,6 +100,200 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          customer_id: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          archived_at: string | null
+          city: string | null
+          created_at: string
+          delivery_notes: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          postcode: string | null
+          price_tier: string
+          source: string | null
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          archived_at?: string | null
+          city?: string | null
+          created_at?: string
+          delivery_notes?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          price_tier?: string
+          source?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          archived_at?: string | null
+          city?: string | null
+          created_at?: string
+          delivery_notes?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          price_tier?: string
+          source?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      interactions: {
+        Row: {
+          channel: string
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          direction: string
+          follow_up_done: boolean
+          follow_up_on: string | null
+          id: string
+          notes: string | null
+          occurred_at: string
+          outcome: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          direction?: string
+          follow_up_done?: boolean
+          follow_up_on?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          outcome?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          direction?: string
+          follow_up_done?: boolean
+          follow_up_on?: string | null
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          outcome?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -135,7 +329,59 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_customer_list: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          archived_at: string | null
+          city: string | null
+          created_at: string | null
+          delivery_notes: string | null
+          email: string | null
+          id: string | null
+          last_contacted_at: string | null
+          name: string | null
+          notes: string | null
+          open_follow_up_on: string | null
+          phone: string | null
+          postcode: string | null
+          price_tier: string | null
+          source: string | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_follow_ups_due: {
+        Row: {
+          channel: string | null
+          customer_id: string | null
+          customer_name: string | null
+          follow_up_on: string | null
+          id: string | null
+          is_overdue: boolean | null
+          notes: string | null
+          outcome: string | null
+          subject: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       f_today: { Args: never; Returns: string }
