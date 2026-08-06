@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCustomer, listContacts, listInteractions } from '@/lib/queries/customers'
 import { listEffectivePrices } from '@/lib/queries/pricing'
+import { listOrdersForCustomer } from '@/lib/queries/orders'
 import { CustomerHeader } from './customer-header'
 import { OverviewTab } from './overview-tab'
 import { ActivityTab } from './activity-tab'
 import { PricingTab } from './pricing-tab'
+import { OrdersTab } from './orders-tab'
 
 export default async function CustomerDetailPage({
   params,
@@ -17,10 +19,11 @@ export default async function CustomerDetailPage({
   const customer = await getCustomer(id)
   if (!customer) notFound()
 
-  const [contacts, interactions, prices] = await Promise.all([
+  const [contacts, interactions, prices, orders] = await Promise.all([
     listContacts(id),
     listInteractions(id),
     listEffectivePrices(id),
+    listOrdersForCustomer(id),
   ])
 
   return (
@@ -41,6 +44,9 @@ export default async function CustomerDetailPage({
           <TabsTrigger value="pricing" className="min-h-11">
             Pricing
           </TabsTrigger>
+          <TabsTrigger value="orders" className="min-h-11">
+            Orders
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -53,6 +59,10 @@ export default async function CustomerDetailPage({
 
         <TabsContent value="pricing">
           <PricingTab customerId={customer.id} priceTier={customer.price_tier} prices={prices} />
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <OrdersTab orders={orders} />
         </TabsContent>
       </Tabs>
     </div>
