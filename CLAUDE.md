@@ -120,6 +120,25 @@ written without a caret on purpose. Check `package.json` after any install.
   recommended pattern. All four functions pin `search_path`; advisor is
   clean with zero findings. Keep it that way.
 
+## Known, accepted lint warning — do not "fix" it
+
+`npm run lint` reports exactly **one** warning, 0 errors:
+
+```
+data-table.tsx  react-hooks/incompatible-library
+TanStack Table's `useReactTable()` API returns functions that cannot be
+memoized safely
+```
+
+This is accurate and permanent. TanStack Table v8 predates the React
+Compiler's memoization contract. Do NOT resolve it by suppressing the rule,
+by dropping TanStack Table, or by upgrading to v9 — v9 renames
+`useReactTable` to `useTable` and breaks shadcn's data-table guide, which
+the whole UI layer follows. The React Compiler is not enabled in
+`next.config.ts` anyway; only its lint rule ships with `eslint-config-next`.
+
+**A second warning appearing means something new — investigate it.**
+
 ## Testing (approved deviation from spec §1)
 
 `vitest`, `vite-tsconfig-paths` and `@playwright/test` are installed on
