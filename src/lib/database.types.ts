@@ -429,6 +429,207 @@ export type Database = {
           },
         ]
       }
+      invoice_orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          invoice_id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          invoice_id: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          invoice_id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_orders_invoice_id_customer_id_fkey"
+            columns: ["invoice_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_invoice_id_customer_id_fkey"
+            columns: ["invoice_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_list"
+            referencedColumns: ["invoice_id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_invoice_id_customer_id_fkey"
+            columns: ["invoice_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_list"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_customer_id_fkey"
+            columns: ["order_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_customer_id_fkey"
+            columns: ["order_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_order_list"
+            referencedColumns: ["order_id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_customer_id_fkey"
+            columns: ["order_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_order_totals"
+            referencedColumns: ["order_id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_customer_id_fkey"
+            columns: ["order_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_uninvoiced_orders"
+            referencedColumns: ["order_id", "customer_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "v_order_list"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "v_order_totals"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "v_uninvoiced_orders"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          customer_id: string
+          delivery_charge: number
+          discount_amount: number
+          due_on: string
+          id: string
+          invoice_number: string
+          issued_on: string
+          notes: string | null
+          status: string
+          updated_at: string
+          voided_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          delivery_charge?: number
+          discount_amount?: number
+          due_on: string
+          id?: string
+          invoice_number: string
+          issued_on?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          voided_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          delivery_charge?: number
+          discount_amount?: number
+          due_on?: string
+          id?: string
+          invoice_number?: string
+          issued_on?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          voided_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -490,6 +691,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "v_order_totals"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v_uninvoiced_orders"
             referencedColumns: ["order_id"]
           },
           {
@@ -593,6 +801,58 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recurring_orders"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          method: string | null
+          paid_on: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          method?: string | null
+          paid_on?: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          method?: string | null
+          paid_on?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_list"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -953,6 +1213,107 @@ export type Database = {
           },
         ]
       }
+      v_invoice_list: {
+        Row: {
+          amount_paid: number | null
+          balance: number | null
+          computed_status: string | null
+          customer_id: string | null
+          customer_name: string | null
+          delivery_charge: number | null
+          discount_amount: number | null
+          due_on: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          issued_on: string | null
+          notes: string | null
+          order_count: number | null
+          stored_status: string | null
+          subtotal: number | null
+          total: number | null
+          voided_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+        ]
+      }
+      v_invoice_totals: {
+        Row: {
+          amount_paid: number | null
+          balance: number | null
+          computed_status: string | null
+          customer_id: string | null
+          delivery_charge: number | null
+          discount_amount: number | null
+          due_on: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          issued_on: string | null
+          notes: string | null
+          order_count: number | null
+          stored_status: string | null
+          subtotal: number | null
+          total: number | null
+          voided_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+        ]
+      }
       v_order_list: {
         Row: {
           customer_id: string | null
@@ -1071,6 +1432,60 @@ export type Database = {
         }
         Relationships: []
       }
+      v_uninvoiced_orders: {
+        Row: {
+          customer_id: string | null
+          customer_name: string | null
+          delivery_date: string | null
+          gross_margin: number | null
+          line_count: number | null
+          order_id: string | null
+          order_number: number | null
+          ordered_on: string | null
+          recurring_order_id: string | null
+          status: string | null
+          subtotal: number | null
+          total_cost: number | null
+          total_units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_delivery_schedule"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_effective_prices"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_recurring_order_id_fkey"
+            columns: ["recurring_order_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       f_bake_list: {
@@ -1082,6 +1497,15 @@ export type Database = {
           product_unit: string
           total_quantity: number
         }[]
+      }
+      f_create_invoice: {
+        Args: {
+          p_customer_id: string
+          p_due_on: string
+          p_issued_on: string
+          p_order_ids: string[]
+        }
+        Returns: string
       }
       f_generate_scheduled_orders: {
         Args: { p_until: string }
@@ -1104,6 +1528,7 @@ export type Database = {
         }[]
       }
       f_today: { Args: never; Returns: string }
+      f_void_invoice: { Args: { p_invoice_id: string }; Returns: undefined }
       hook_restrict_signup: { Args: { event: Json }; Returns: Json }
     }
     Enums: {
