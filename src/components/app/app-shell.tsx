@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { NAV_LINKS } from '@/components/app/nav-links'
+import { CommandPalette } from '@/components/app/command-palette'
 import { ThemeToggle } from '@/components/app/theme-toggle'
 import { UserMenu } from '@/components/app/user-menu'
 import { Button } from '@/components/ui/button'
@@ -71,8 +72,7 @@ export function AppShell({
             </SheetContent>
           </Sheet>
 
-          {/* Phase 7 replaces this with the command palette trigger. */}
-          <div className="flex-1" id="topbar-search-slot" />
+          <div className="min-w-0 flex-1"><CommandPalette /></div>
 
           <ThemeToggle />
           <UserMenu email={email} />
