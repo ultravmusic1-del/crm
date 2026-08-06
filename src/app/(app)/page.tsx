@@ -1,16 +1,15 @@
 import Link from 'next/link'
-import {
-  DashboardSection,
-  SectionPlaceholder,
-} from '@/components/app/dashboard-section'
+import { DashboardSection } from '@/components/app/dashboard-section'
 import { FollowUpsDue } from '@/components/app/follow-ups-due'
 import { DeliveriesToday } from '@/components/app/deliveries-today'
 import { WeekSummaryCard } from '@/components/app/week-summary-card'
 import { MoneySummaryCards } from '@/components/app/money-summary-cards'
+import { AtRiskCustomers } from '@/components/app/at-risk-customers'
 import { Button } from '@/components/ui/button'
 import { Money } from '@/components/app/money'
 import { listFollowUpsDue } from '@/lib/queries/customers'
 import { getWeekSummary, getMoneySummary } from '@/lib/queries/dashboard'
+import { listAtRiskCustomers, getContactsFor } from '@/lib/queries/insights'
 
 /**
  * Ordered as the answer to "what do I need to do today?". Each section is
@@ -18,11 +17,15 @@ import { getWeekSummary, getMoneySummary } from '@/lib/queries/dashboard'
  * order IS the design.
  */
 export default async function DashboardPage() {
-  const [followUps, weekSummary, moneySummary] = await Promise.all([
+  const [followUps, weekSummary, moneySummary, atRisk] = await Promise.all([
     listFollowUpsDue(),
     getWeekSummary(),
     getMoneySummary(),
+    listAtRiskCustomers(),
   ])
+  const contactsByCustomer = await getContactsFor(
+    atRisk.map((c) => c.customer_id).filter((id): id is string => id !== null),
+  )
 
   return (
     <div className="space-y-8">
@@ -64,8 +67,15 @@ export default async function DashboardPage() {
         <MoneySummaryCards summary={moneySummary} />
       </DashboardSection>
 
-      <DashboardSection title="Needs attention">
-        <SectionPlaceholder phase="Phase 6" />
+      <DashboardSection
+        title="Needs attention"
+        action={
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/insights">See all insights</Link>
+          </Button>
+        }
+      >
+        <AtRiskCustomers customers={atRisk} contactsByCustomer={contactsByCustomer} />
       </DashboardSection>
     </div>
   )
