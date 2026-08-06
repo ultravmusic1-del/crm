@@ -128,6 +128,25 @@ Small, deliberate, and each resolves a contradiction inside the spec itself.
 - **`customers/[id]/edit/page.tsx` is not built.** §5 lists it, but §6.1 mandates a right-hand sheet for editing a record so the list behind stays visible, and gives full pages only to multi-section creation. The sheet wins; there is no edit route. Order editing is the one exception — it *is* multi-section, so it gets a sheet holding the full `OrderForm` rather than a stripped one (Phase 3 Task 3.8).
 - **`quick-add-sheet.tsx` becomes `/quick-order`.** §5 names a sheet; §6.6 describes a two-tap flow with its own customer-picking step. A two-step flow is a route, not a sheet — a sheet that replaces its own contents is just a page with worse browser history.
 
+## ⚠️ Correction that applies to EVERY remaining phase: never format a date with date-fns `format()`
+
+Several code samples in these plan files render dates with `format(parseISO(x), '…')`. **For a `timestamptz` column that is a bug** and it was caught during the Phase 1 build.
+
+`parseISO` on a string carrying an offset produces a correct instant; `date-fns format()` then renders it **in the host's local timezone**. Vercel runs UTC and the bakery is UTC+3, so a 22:30 Bahrain timestamp renders as the *previous day* on the server, and a client component's SSR pass renders differently from its hydrated pass.
+
+**The rule:**
+
+| Column type | Example | How to render |
+|---|---|---|
+| `timestamptz` (an instant) | `occurred_at`, `created_at` | `formatDateTime()` / `formatDate()` from `lib/format.ts`, or `Intl.DateTimeFormat` with an explicit `timeZone: BUSINESS_TIME_ZONE` |
+| `date` (a calendar day) | `follow_up_on`, `delivery_date`, `issued_on` | `formatDate()` from `lib/format.ts` — it detects a plain `YYYY-MM-DD` and renders it identically in every timezone, with no conversion |
+
+`lib/format.ts` already handles both correctly, and `formatDateTime()` deliberately **refuses** a plain date — a date column has no time of day and inventing midnight for it is a lie.
+
+Uses of `format(parseISO(…))` on a plain `date` (the chart month labels in Phase 6, for instance) are self-consistent and not wrong, but prefer `formatDate()` anyway so there is one way to do this.
+
+`parseISO` on its own is fine — it is only the `format()` that reads the ambient clock.
+
 ## Two smaller notes carried into the plan
 
 - **`react-day-picker` is at 10.0.1.** Spec §2 warns that generated Calendar `classNames` maps drift from the installed react-day-picker. v10 is recent enough that the spec's own list of "current keys" may already be stale. Phase 1 Task 1.2 makes this an explicit check against the installed package's own types rather than against either document.
