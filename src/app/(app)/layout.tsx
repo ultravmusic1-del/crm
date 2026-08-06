@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/queries/settings'
 import { AppShell } from '@/components/app/app-shell'
+import { KeyboardShortcuts } from '@/components/app/keyboard-shortcuts'
 import { SettingsProvider } from '@/components/app/settings-provider'
 
 export default async function AppLayout({
@@ -20,7 +21,10 @@ export default async function AppLayout({
 
   return (
     <SettingsProvider settings={settings}>
-      <AppShell email={email}>{children}</AppShell>
+      <AppShell email={email}>
+        {children}
+        <KeyboardShortcuts />
+      </AppShell>
     </SettingsProvider>
   )
 }
