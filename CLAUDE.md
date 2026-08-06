@@ -27,6 +27,11 @@ No PDF library — invoices print from an HTML route.
 **`npm install <pkg>@<version>` adds a `^` by default.** Both pins above are
 written without a caret on purpose. Check `package.json` after any install.
 
+**`npx shadcn add <component>` can DOWNGRADE an existing dependency.**
+`shadcn add chart` silently rewrote `recharts` from `^3.10.1` to `^3.8.0` in
+both `package.json` and `package-lock.json`. Always `git diff package.json`
+after a `shadcn add` and revert any version it moved.
+
 ## Framework non-negotiables
 
 - **`src/proxy.ts`**, NOT the repo root and NOT `middleware.ts`. Next 16
